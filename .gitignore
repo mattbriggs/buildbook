@@ -1,3 +1,7 @@
+# Build output — keep the directory placeholder but ignore artefacts
+output/*
+!output/.gitkeep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

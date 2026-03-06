@@ -1,0 +1,17 @@
+manuscript:
+  title: My Book
+  author: Your Name
+  version: 0.1.0
+  date: '2026'
+  output_dir: ../output
+
+content:
+- order: 1
+  title: Introduction
+  file: 001-introduction.md
+- order: 2
+  title: 'Chapter One: Your First Chapter'
+  file: 002-chapter-one.md
+- order: 3
+  title: 'Chapter Two: Going Deeper'
+  file: 003-chapter-two.md
