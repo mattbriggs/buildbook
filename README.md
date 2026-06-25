@@ -12,6 +12,7 @@ compile to Word, EPUB, PDF, HTML, or Markdown with a single command.
 
 - [Prerequisites](#prerequisites)
   - [Pandoc](#pandoc)
+  - [Mermaid diagrams](#mermaid-diagrams)
   - [PDF output](#pdf-output)
   - [Python](#python)
 - [Quick Start](#quick-start)
@@ -51,6 +52,31 @@ pandoc --version
 
 Pandoc 3.x is recommended. Version 2.11+ will work for all formats except
 those requiring newer Lua filters.
+
+### Mermaid diagrams
+
+Markdown files may include fenced Mermaid diagrams:
+
+````markdown
+```mermaid
+graph TD
+    A --> B
+```
+````
+
+When Mermaid fences are present, `buildbook` renders them to PNG files with
+Mermaid CLI before invoking Pandoc, then passes rewritten Markdown with image
+references that Pandoc can include in DOCX, EPUB, HTML, PDF, and Markdown
+outputs.
+
+Install Mermaid CLI with npm:
+
+```bash
+npm install -g @mermaid-js/mermaid-cli
+mmdc --version
+```
+
+Books without Mermaid fences do not require `mmdc`.
 
 ### PDF output
 
@@ -258,6 +284,7 @@ buildbook/              Python package (the build tool — extend but do not del
   __init__.py           Package version (__version__)
   manifest.py           ManifestEntry, ManuscriptMeta, Manifest DTOs + loader
   builder.py            Builder class, BuildResult dataclass, FORMAT_MAP
+  mermaid.py            Renders Mermaid fences to Pandoc-readable images
   scanner.py            Scanner — auto-generates manifests from a directory
   cli.py                CLI entry point (build and init subcommands)
 
@@ -273,6 +300,7 @@ tests/
   conftest.py           Shared pytest fixtures
   test_manifest.py      Tests for manifest models and loader
   test_builder.py       Tests for Builder (Pandoc mocked)
+  test_mermaid.py       Tests for Mermaid preprocessing (mmdc mocked)
   test_scanner.py       Tests for Scanner
   test_cli.py           End-to-end CLI tests
 
@@ -292,8 +320,8 @@ With the virtual environment activated:
 pytest
 ```
 
-All tests mock the Pandoc subprocess — Pandoc does not need to be installed
-to run the test suite.
+All tests mock the Pandoc and Mermaid CLI subprocesses — neither Pandoc nor
+`mmdc` need to be installed to run the test suite.
 
 Run with coverage:
 

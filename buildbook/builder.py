@@ -33,11 +33,13 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from buildbook.manifest import Manifest
+from buildbook.mermaid import render_mermaid_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +179,29 @@ class Builder:
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
 
+    def _preprocess_mermaid(
+        self, input_files: List[str], work_dir: Path
+    ) -> List[str]:
+        """Render mermaid diagrams in each input file and return updated paths.
+
+        For files that contain mermaid fences the rewritten temp file path is
+        returned; files with no mermaid content are returned unchanged.
+
+        :param input_files: Ordered list of absolute input file paths.
+        :param work_dir: Scratch directory for rendered images and temp files.
+        :return: List of file paths with mermaid-containing files replaced by
+            their rewritten counterparts in *work_dir*.
+        :raises RuntimeError: If ``mmdc`` is not found and diagrams are present.
+        :raises subprocess.CalledProcessError: If ``mmdc`` fails to render.
+        """
+        result: List[str] = []
+        for i, f in enumerate(input_files):
+            rewritten = render_mermaid_blocks(Path(f), work_dir, file_index=i)
+            result.append(str(rewritten) if rewritten is not None else f)
+            if rewritten is not None:
+                self._logger.info("Rendered mermaid diagrams in %s", Path(f).name)
+        return result
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -216,12 +241,15 @@ class Builder:
         pandoc_fmt, ext = FORMAT_MAP[fmt]
         out_path = self._output_path(output_name, ext)
         input_files = self._resolve_inputs()
-        cmd = self._build_command(pandoc_fmt, out_path, input_files, extra_args)
 
-        self._logger.info("Building %s -> %s", fmt, out_path)
-        self._logger.debug("Command: %s", " ".join(cmd))
+        with tempfile.TemporaryDirectory(prefix="buildbook-") as tmp:
+            processed_files = self._preprocess_mermaid(input_files, Path(tmp))
+            cmd = self._build_command(pandoc_fmt, out_path, processed_files, extra_args)
 
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+            self._logger.info("Building %s -> %s", fmt, out_path)
+            self._logger.debug("Command: %s", " ".join(cmd))
+
+            proc = subprocess.run(cmd, capture_output=True, text=True)
 
         if proc.returncode == 0:
             msg = f"Built: {out_path}"

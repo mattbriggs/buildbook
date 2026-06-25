@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import logging
+import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -183,6 +184,10 @@ def _cmd_build(args: argparse.Namespace) -> int:
         result = builder.build(args.format, args.output, extra_args=extra)
     except (RuntimeError, ValueError, FileNotFoundError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as exc:
+        stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        print(f"Error rendering mermaid diagram:\n{stderr.strip()}", file=sys.stderr)
         return 1
 
     if result.success:
